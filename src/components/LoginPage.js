@@ -1,6 +1,4 @@
-// src/components/LoginPage.js
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import './LoginPage.css';
@@ -19,10 +17,43 @@ function LoginPage() {
     const [state, setState] = useState('');
     const [userCategory, setUserCategory] = useState('Individual');
     const [isSignup, setIsSignup] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchPostalDetails = async () => {
+            if (pinCode.length === 6) {
+                try {
+                    const response = await fetch(`https://api.postalpincode.in/pincode/${pinCode}`);
+                    const data = await response.json();
+                    if (data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+                        const postOffice = data[0].PostOffice[0];
+                        setCity(postOffice.District || '');
+                        setState(postOffice.State || '');
+                        setCountry(postOffice.Country || '');
+                        setErrorMessage('');
+                    } else {
+                        setCity('');
+                        setState('');
+                        setCountry('');
+                        setErrorMessage('Invalid PIN code or no data found');
+                    }
+                } catch (error) {
+                    console.error('Error fetching postal details:', error);
+                    setErrorMessage('Failed to fetch postal details.');
+                }
+            } else {
+                setCity('');
+                setState('');
+                setCountry('');
+            }
+        };
+        fetchPostalDetails();
+    }, [pinCode]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMessage('');
         if (isSignup && password !== confirmPassword) {
             alert('Passwords do not match!');
             return;
@@ -43,6 +74,22 @@ function LoginPage() {
                     user_category: userCategory
                 });
                 console.log('Signup successful:', response.data);
+
+                // Clear form fields after successful signup
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+                setFirstName('');
+                setLastName('');
+                setPhoneNumber('');
+                setAddress('');
+                setPinCode('');
+                setCity('');
+                setCountry('');
+                setState('');
+                setUserCategory('Individual');
+
+                alert('Signup successful! Please log in.');
                 navigate('/login');
             } else {
                 const response = await api.post('token/', { email, password });
@@ -55,6 +102,11 @@ function LoginPage() {
             }
         } catch (error) {
             console.error('Error:', error);
+            if (error.response && error.response.status === 400 && error.response.data.email) {
+                setErrorMessage('Email already exists.');
+            } else {
+                setErrorMessage('An error occurred. Please try again.');
+            }
         }
     };
 
@@ -62,6 +114,7 @@ function LoginPage() {
         <div className="login-container">
             <div className="login-form">
                 <h1>{isSignup ? 'Sign Up' : 'Login'}</h1>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <form onSubmit={handleSubmit}>
                     {isSignup && (
                         <>

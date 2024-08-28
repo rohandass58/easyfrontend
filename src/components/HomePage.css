@@ -1,4 +1,17 @@
 /* Container for the home page */
+
+.search-bar {
+  margin: 20px 0;
+  padding: 8px;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.home-page {
+  padding: 20px;
+}
 .home-page {
   font-family: Arial, sans-serif;
   margin: 20px;
